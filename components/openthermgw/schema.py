@@ -1044,4 +1044,14 @@ INPUTS: Schema[InputSchema] = Schema({
         "init": False,
         "update_time": -1,
     }),
+    "t_room_override": InputSchema({
+        "description": "Room temperature override (sent to the boiler instead of the thermostat value)",
+        "unit_of_measurement": UNIT_CELSIUS,
+        "message": "Tr",
+        "keep_updated": True,
+        "message_data": "f88",
+        "range": (0, 40),
+        "init": False,
+        "update_time": -1,
+    }),
 })

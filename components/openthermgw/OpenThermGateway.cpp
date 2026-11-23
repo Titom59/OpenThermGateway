@@ -198,23 +198,14 @@ namespace esphome {
 			parseRequest(requestType, requestDataID, requestData);
 			if(m_otBoiler!=NULL)
 			{
-				// Handle overrides
+				// Handle overrides (ignored if Home Assistant has not refreshed them for OPENTHERMGW_OVERRIDE_TIMEOUT_MS)
 #ifdef OPENTHERMGW_HAS_NUMBER_t_roomset_override
 				if(requestDataID==OpenThermMessageID::TrSet)
-				{
-					if(this->t_roomset_override_number->has_state())
-					{
-						float fValue=this->t_roomset_override_number->state;
-						if(fValue!=0.)
-						{
-							unsigned int data = m_otBoiler->temperatureToData(fValue);
-							unsigned int requestOverride=m_otBoiler->buildRequest(OpenThermMessageType::WRITE_DATA, requestDataID, data);
-							ESP_LOGD(TAG, "t_roomsetoverride : %f (%x -> %x)", fValue, request, requestOverride);
-
-							request=requestOverride;
-						}
-					}
-				}
+					request=applyOverride(request, requestDataID, this->t_roomset_override_number->active_override(OPENTHERMGW_OVERRIDE_TIMEOUT_MS), "t_roomset_override");
+#endif
+#ifdef OPENTHERMGW_HAS_NUMBER_t_room_override
+				if(requestDataID==OpenThermMessageID::Tr)
+					request=applyOverride(request, requestDataID, this->t_room_override_number->active_override(OPENTHERMGW_OVERRIDE_TIMEOUT_MS), "t_room_override");
 #endif
 				unsigned long response = m_otBoiler->sendRequest(request);
 				if (response!=0)
@@ -227,6 +218,16 @@ namespace esphome {
 				}
 			}
 		}
+	}
+
+	unsigned long OpenThermGateway::applyOverride(unsigned long request, OpenThermMessageID id, float fValue, const char *name)
+	{
+		if(fValue==0.f)
+			return request;
+		unsigned int data = m_otBoiler->temperatureToData(fValue);
+		unsigned long requestOverride=m_otBoiler->buildRequest(OpenThermMessageType::WRITE_DATA, id, data);
+		ESP_LOGD(TAG, "%s : %.2f (%08X -> %08X)", name, fValue, request, requestOverride);
+		return requestOverride;
 	}
 
 	void OpenThermGateway::parseRequest(OpenThermMessageType type, OpenThermMessageID dataID, uint16_t data)

@@ -11,6 +11,12 @@
 #include "switch.h"
 #include "number.h"
 
+// Overrides are dropped (thermostat values pass through again) if Home Assistant
+// has not re-sent them within this delay: HA down, Wi-Fi lost, automation stuck.
+#ifndef OPENTHERMGW_OVERRIDE_TIMEOUT_MS
+#define OPENTHERMGW_OVERRIDE_TIMEOUT_MS (15UL * 60UL * 1000UL)
+#endif
+
 // Ensure that all component macros are defined, even if the component is not used
 #ifndef OPENTHERMGW_SENSOR_LIST
 #define OPENTHERMGW_SENSOR_LIST(F, sep)
@@ -187,6 +193,7 @@ namespace esphome {
 			
 			void processRequestThermostat(unsigned long request, OpenThermResponseStatus status);		
 			
+			unsigned long applyOverride(unsigned long request, OpenThermMessageID id, float fValue, const char *name);
 			void parseRequest(OpenThermMessageType type, OpenThermMessageID dataID, uint16_t data);
 			void parseResponse(OpenThermMessageType type, OpenThermMessageID dataID, uint16_t data);
 			
